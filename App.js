@@ -135,7 +135,7 @@ export default function App() {
         }}
       >
         <Text style={{ color: "#fff" }}>
-          {falando ? "SOLTA PRA PARAR" : "SEGURA PRA FALAR"}
+          {falando ? "ESCUTA O MASTRA" : "FALE COM O MASTRA"}
         </Text>
       </Pressable>
     </View>
