@@ -10,9 +10,18 @@
   },
   "dependencies": {
     "expo": "~54.0.33",
+    "expo-av": "~16.0.8",
+    "expo-file-system": "~19.0.21",
     "expo-status-bar": "~3.0.9",
+    "express": "^5.2.1",
     "react": "19.1.0",
-    "react-native": "0.81.5"
+    "react-native": "0.81.5",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3"
   },
-  "private": true
+  "private": true,
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
 }
