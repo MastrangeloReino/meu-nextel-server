@@ -4,7 +4,7 @@ import { Audio } from "expo-av";
 import { io } from "socket.io-client";
 import * as FileSystem from "expo-file-system/legacy";
 
-const socket = io("http://192.168.15.11:3000");
+const socket = io("https://meu-nextel-server.onrender.com");
 
 export default function App() {
   const [falando, setFalando] = useState(false);
