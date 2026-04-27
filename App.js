@@ -1,13 +1,27 @@
-import { View, Text, Pressable } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  Button,
+  NativeModules,
+  Alert,
+  PermissionsAndroid,
+  Platform,
+} from "react-native";
 import { useState, useRef, useEffect } from "react";
 import { Audio } from "expo-av";
 import { io } from "socket.io-client";
 import * as FileSystem from "expo-file-system/legacy";
 
-const socket = io("https://meu-nextel-server.onrender.com");
+const { MastrappService } = NativeModules;
+
+const socket = io("https://meu-nextel-server.onrender.com", {
+  autoConnect: false,
+});
 
 export default function App() {
   const [falando, setFalando] = useState(false);
+  const [online, setOnline] = useState(false);
   const recording = useRef(null);
 
   useEffect(() => {
@@ -25,6 +39,7 @@ export default function App() {
         await FileSystem.writeAsStringAsync(fileUri, data, {
           encoding: "base64",
         });
+
         await Audio.setAudioModeAsync({
           allowsRecordingIOS: false,
           playsInSilentModeIOS: true,
@@ -101,6 +116,10 @@ export default function App() {
 
       console.log("Base64 tamanho:", base64.length);
 
+      if (!socket.connected) {
+        socket.connect();
+      }
+
       socket.emit("audio", base64);
       console.log("Áudio enviado para o servidor");
 
@@ -109,6 +128,36 @@ export default function App() {
       console.log("Erro ao parar/enviar áudio:", e);
       recording.current = null;
       setFalando(false);
+    }
+  }
+
+  async function toggleOnline() {
+    try {
+      if (!MastrappService) {
+        Alert.alert("Erro", "Serviço Android não encontrado");
+        return;
+      }
+
+      if (!online) {
+        if (Platform.OS === "android" && Platform.Version >= 33) {
+          await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+          );
+        }
+
+        MastrappService.startService();
+        socket.connect();
+        setOnline(true);
+        console.log("Modo rádio ATIVO");
+      } else {
+        MastrappService.stopService();
+        socket.disconnect();
+        setOnline(false);
+        console.log("Modo rádio DESLIGADO");
+      }
+    } catch (e) {
+      console.log("Erro no botão online:", e);
+      Alert.alert("Erro", String(e));
     }
   }
 
@@ -122,7 +171,7 @@ export default function App() {
       }}
     >
       <Text style={{ color: "#fff", marginBottom: 20 }}>
-        {falando ? "🎤 Gravando..." : "🔇 Parado"}
+        {falando ? "🎤 Gravando..." : online ? "📡 Online" : "🔇 Offline"}
       </Text>
 
       <Pressable
@@ -132,12 +181,18 @@ export default function App() {
           backgroundColor: falando ? "red" : "#333",
           padding: 40,
           borderRadius: 100,
+          marginBottom: 20,
         }}
       >
         <Text style={{ color: "#fff" }}>
-          {falando ? "ESCUTA O MASTRA" : "FALE COM O MASTRA"}
+          {falando ? "SOLTA PRA PARAR" : "SEGURA PRA FALAR"}
         </Text>
       </Pressable>
+
+      <Button
+        title={online ? "Ficar offline" : "Ficar online"}
+        onPress={toggleOnline}
+      />
     </View>
   );
 }
