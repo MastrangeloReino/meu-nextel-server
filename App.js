@@ -11,26 +11,12 @@ import { useState, useRef, useEffect } from "react";
 import { Audio } from "expo-av";
 import { io } from "socket.io-client";
 import * as FileSystem from "expo-file-system/legacy";
-import BackgroundService from "react-native-background-actions";
 
 const SERVER_URL = "https://meu-nextel-server.onrender.com";
 
 const socket = io(SERVER_URL, {
   autoConnect: false,
 });
-
-const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time));
-
-const backgroundOptions = {
-  taskName: "Mastrapp",
-  taskTitle: "Mastrapp ativo",
-  taskDesc: "Pronto para receber áudio",
-  taskIcon: {
-    name: "ic_launcher",
-    type: "mipmap",
-  },
-  color: "#111111",
-};
 
 export default function App() {
   const [falando, setFalando] = useState(false);
@@ -72,18 +58,6 @@ export default function App() {
       socket.off("audio");
     };
   }, []);
-
-  const backgroundTask = async () => {
-    console.log("Serviço background iniciado");
-
-    if (!socket.connected) {
-      socket.connect();
-    }
-
-    while (BackgroundService.isRunning()) {
-      await sleep(1000);
-    }
-  };
 
   async function startRecording() {
     try {
@@ -152,14 +126,10 @@ export default function App() {
           );
         }
 
-        await BackgroundService.start(backgroundTask, backgroundOptions);
-
         socket.connect();
         setOnline(true);
         console.log("Modo rádio ATIVO");
       } else {
-        await BackgroundService.stop();
-
         socket.disconnect();
         setOnline(false);
         console.log("Modo rádio DESLIGADO");
