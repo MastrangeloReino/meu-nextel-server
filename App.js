@@ -3,7 +3,6 @@ import {
   Text,
   Pressable,
   Button,
-  NativeModules,
   Alert,
   PermissionsAndroid,
   Platform,
@@ -12,12 +11,26 @@ import { useState, useRef, useEffect } from "react";
 import { Audio } from "expo-av";
 import { io } from "socket.io-client";
 import * as FileSystem from "expo-file-system/legacy";
+import BackgroundService from "react-native-background-actions";
 
-const { MastrappService } = NativeModules;
+const SERVER_URL = "https://meu-nextel-server.onrender.com";
 
-const socket = io("https://meu-nextel-server.onrender.com", {
+const socket = io(SERVER_URL, {
   autoConnect: false,
 });
+
+const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time));
+
+const backgroundOptions = {
+  taskName: "Mastrapp",
+  taskTitle: "Mastrapp ativo",
+  taskDesc: "Pronto para receber áudio",
+  taskIcon: {
+    name: "ic_launcher",
+    type: "mipmap",
+  },
+  color: "#111111",
+};
 
 export default function App() {
   const [falando, setFalando] = useState(false);
@@ -60,10 +73,20 @@ export default function App() {
     };
   }, []);
 
+  const backgroundTask = async () => {
+    console.log("Serviço background iniciado");
+
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    while (BackgroundService.isRunning()) {
+      await sleep(1000);
+    }
+  };
+
   async function startRecording() {
     try {
-      console.log("Começou a gravar");
-
       const permission = await Audio.requestPermissionsAsync();
 
       if (!permission.granted) {
@@ -89,23 +112,14 @@ export default function App() {
 
   async function stopRecording() {
     try {
-      console.log("Soltou o botão");
-
-      if (!recording.current) {
-        console.log("Não tem gravação ativa");
-        return;
-      }
+      if (!recording.current) return;
 
       setFalando(false);
 
       await recording.current.stopAndUnloadAsync();
-      console.log("Gravação parada");
-
       const uri = recording.current.getURI();
-      console.log("URI:", uri);
 
       if (!uri) {
-        console.log("URI vazia");
         recording.current = null;
         return;
       }
@@ -113,8 +127,6 @@ export default function App() {
       const base64 = await FileSystem.readAsStringAsync(uri, {
         encoding: "base64",
       });
-
-      console.log("Base64 tamanho:", base64.length);
 
       if (!socket.connected) {
         socket.connect();
@@ -132,34 +144,32 @@ export default function App() {
   }
 
   async function toggleOnline() {
-    console.log("NativeModules:", NativeModules);
-    console.log("MastrappService:", MastrappService);
-
     try {
       if (!online) {
-        if (!MastrappService) {
-          Alert.alert("DEBUG", "MastrappService NÃO existe");
-          return;
+        if (Platform.OS === "android" && Platform.Version >= 33) {
+          await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+          );
         }
 
-        Alert.alert("DEBUG", "Serviço encontrado, iniciando...");
-
-        MastrappService.startService();
+        await BackgroundService.start(backgroundTask, backgroundOptions);
 
         socket.connect();
         setOnline(true);
+        console.log("Modo rádio ATIVO");
       } else {
-        if (MastrappService) {
-          MastrappService.stopService();
-        }
+        await BackgroundService.stop();
 
         socket.disconnect();
         setOnline(false);
+        console.log("Modo rádio DESLIGADO");
       }
     } catch (e) {
+      console.log("Erro no modo online:", e);
       Alert.alert("Erro", String(e));
     }
   }
+
   return (
     <View
       style={{
