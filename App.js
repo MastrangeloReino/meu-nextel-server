@@ -145,12 +145,12 @@ export default function App() {
           );
         }
 
-        MastrappService.startService();
+        //MastrappService.startService();
         socket.connect();
         setOnline(true);
         console.log("Modo rádio ATIVO");
       } else {
-        MastrappService.stopService();
+        //MastrappService.stopService();
         socket.disconnect();
         setOnline(false);
         console.log("Modo rádio DESLIGADO");
