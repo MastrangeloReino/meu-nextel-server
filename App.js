@@ -132,40 +132,34 @@ export default function App() {
   }
 
   async function toggleOnline() {
+    console.log("NativeModules:", NativeModules);
+    console.log("MastrappService:", MastrappService);
+
     try {
       if (!online) {
-        if (Platform.OS === "android" && Platform.Version >= 33) {
-          await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-          );
+        if (!MastrappService) {
+          Alert.alert("DEBUG", "MastrappService NÃO existe");
+          return;
         }
 
-        if (MastrappService) {
-          MastrappService.startService();
-          console.log("Serviço Android iniciado");
-        } else {
-          console.log("Serviço Android ainda não encontrado");
-        }
+        Alert.alert("DEBUG", "Serviço encontrado, iniciando...");
+
+        MastrappService.startService();
 
         socket.connect();
         setOnline(true);
-        console.log("Modo rádio ATIVO");
       } else {
         if (MastrappService) {
           MastrappService.stopService();
-          console.log("Serviço Android parado");
         }
 
         socket.disconnect();
         setOnline(false);
-        console.log("Modo rádio DESLIGADO");
       }
     } catch (e) {
-      console.log("Erro no botão online:", e);
       Alert.alert("Erro", String(e));
     }
   }
-
   return (
     <View
       style={{
