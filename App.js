@@ -67,7 +67,7 @@ export default function App() {
       const permission = await Audio.requestPermissionsAsync();
 
       if (!permission.granted) {
-        alert("Permissão de microfone negada");
+        Alert.alert("Permissão negada", "Permita o uso do microfone.");
         return;
       }
 
@@ -133,11 +133,6 @@ export default function App() {
 
   async function toggleOnline() {
     try {
-      if (!MastrappService) {
-        Alert.alert("Erro", "Serviço Android não encontrado");
-        return;
-      }
-
       if (!online) {
         if (Platform.OS === "android" && Platform.Version >= 33) {
           await PermissionsAndroid.request(
@@ -145,12 +140,22 @@ export default function App() {
           );
         }
 
-        //MastrappService.startService();
+        if (MastrappService) {
+          MastrappService.startService();
+          console.log("Serviço Android iniciado");
+        } else {
+          console.log("Serviço Android ainda não encontrado");
+        }
+
         socket.connect();
         setOnline(true);
         console.log("Modo rádio ATIVO");
       } else {
-        //MastrappService.stopService();
+        if (MastrappService) {
+          MastrappService.stopService();
+          console.log("Serviço Android parado");
+        }
+
         socket.disconnect();
         setOnline(false);
         console.log("Modo rádio DESLIGADO");
